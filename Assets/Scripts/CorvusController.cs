@@ -9,9 +9,16 @@ public class CorvusController : MonoBehaviour
     public int cantidadMisiles = 5;
     public float spread = 25f;
 
+    [Header("Sprites")]
+    public Sprite[] spritesVuelo;
+    public Sprite spriteCongelado;
+    public float animFrameRate = 0.1f;
+
     private float fireTimer;
     private Transform player;
     private SpriteRenderer sr;
+    private float animTimer;
+    private int animFrame;
 
     void Start()
     {
@@ -23,7 +30,6 @@ public class CorvusController : MonoBehaviour
     {
         if (player == null) return;
 
-        // Parar si el jugador ganó o perdió
         PlayerController pc = player.GetComponent<PlayerController>();
         if (pc != null && (pc.victoria || pc.gameOver)) return;
 
@@ -39,6 +45,18 @@ public class CorvusController : MonoBehaviour
         else
             sr.flipX = false;
 
+        // Animación de vuelo
+        if (spritesVuelo != null && spritesVuelo.Length > 0)
+        {
+            animTimer += Time.deltaTime;
+            if (animTimer >= animFrameRate)
+            {
+                animTimer = 0f;
+                animFrame = (animFrame + 1) % spritesVuelo.Length;
+                sr.sprite = spritesVuelo[animFrame];
+            }
+        }
+
         fireTimer += Time.deltaTime;
         float dist = Vector2.Distance(transform.position, player.position);
         if (dist < attackRange && fireTimer >= fireRate)
@@ -48,10 +66,23 @@ public class CorvusController : MonoBehaviour
         }
     }
 
+    void OnEnable()
+    {
+        // Vuelve al sprite de vuelo cuando se descongela
+        if (sr != null && spritesVuelo != null && spritesVuelo.Length > 0)
+            sr.sprite = spritesVuelo[0];
+    }
+
+    void OnDisable()
+    {
+        // Muestra sprite congelado
+        if (sr != null && spriteCongelado != null)
+            sr.sprite = spriteCongelado;
+    }
+
     void Shoot()
     {
         if (projectilePrefab == null) return;
-
         for (int i = 0; i < cantidadMisiles; i++)
         {
             float angulo = (i - (cantidadMisiles - 1) / 2f) * spread;

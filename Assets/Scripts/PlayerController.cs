@@ -13,6 +13,7 @@ public class PlayerController : MonoBehaviour
     public Sprite spriteWalk1;
     public Sprite spriteHit;
     public Sprite spriteVictoria1;
+    public Sprite spritePowerUp;
 
     public int vidas = 3;
     private bool golpeado = false;
@@ -21,6 +22,7 @@ public class PlayerController : MonoBehaviour
     private float walkTimer = 0f;
     public float walkFrameRate = 0.15f;
     private int walkFrame = 0;
+    private bool enPowerUp = false;
 
     public TextMeshProUGUI textVidas;
     public GameObject panelGameOver;
@@ -29,10 +31,19 @@ public class PlayerController : MonoBehaviour
     public bool gameOver = false;
     public bool victoria = false;
 
+    [Header("Sonidos")]
+    public AudioClip sonidoGolpe;
+    public AudioClip sonidoVictoria;
+    public AudioClip sonidoGameOver;
+    public AudioClip sonidoPowerUp;
+    public AudioClip sonidoTormenta;
+    private AudioSource audioSource;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
         ActualizarVidas();
     }
 
@@ -40,8 +51,10 @@ public class PlayerController : MonoBehaviour
     {
         if (gameOver) return;
 
-        // Detectar zona de victoria por posición
-        if (transform.position.x >= 35.08f && !victoria && !gameOver)
+        if (transform.position.y < -8f)
+            MostrarGameOver();
+
+        if (transform.position.x >= 48.66f && !victoria && !gameOver)
             MostrarVictoria();
 
         if (victoria)
@@ -72,6 +85,10 @@ public class PlayerController : MonoBehaviour
                 invTimer = 0f;
             }
         }
+        else if (enPowerUp)
+        {
+            sr.sprite = spritePowerUp;
+        }
         else if (input != 0)
         {
             walkTimer += Time.deltaTime;
@@ -100,6 +117,8 @@ public class PlayerController : MonoBehaviour
         vidas--;
         golpeado = true;
         ActualizarVidas();
+        CameraFollow.instance.Shake();
+        if (sonidoGolpe != null) audioSource.PlayOneShot(sonidoGolpe);
         if (vidas <= 0)
             MostrarGameOver();
     }
@@ -114,6 +133,9 @@ public class PlayerController : MonoBehaviour
     {
         gameOver = true;
         rb.linearVelocity = Vector2.zero;
+        AudioSource musicaFondo = Camera.main.GetComponent<AudioSource>();
+        if (musicaFondo != null) musicaFondo.Stop();
+        if (sonidoGameOver != null) audioSource.PlayOneShot(sonidoGameOver);
         if (panelGameOver != null)
             panelGameOver.SetActive(true);
     }
@@ -122,7 +144,60 @@ public class PlayerController : MonoBehaviour
     {
         victoria = true;
         rb.linearVelocity = Vector2.zero;
+        AudioSource musicaFondo = Camera.main.GetComponent<AudioSource>();
+        if (musicaFondo != null) musicaFondo.Stop();
+        if (sonidoVictoria != null) audioSource.PlayOneShot(sonidoVictoria);
         if (panelVictoria != null)
             panelVictoria.SetActive(true);
+    }
+
+    public void AplicarVelocidad(float duracion)
+    {
+        if (sonidoPowerUp != null) audioSource.PlayOneShot(sonidoPowerUp);
+        StartCoroutine(PowerUpVelocidad(duracion));
+    }
+
+    public void AplicarCongelamiento(float duracion)
+    {
+        if (sonidoPowerUp != null) audioSource.PlayOneShot(sonidoPowerUp);
+        StartCoroutine(CongelarCorvus(duracion));
+    }
+
+    public void AplicarSonidoTormenta()
+    {
+        if (sonidoTormenta != null) audioSource.PlayOneShot(sonidoTormenta);
+        StartCoroutine(MostrarSpriteTormenta());
+    }
+
+    private System.Collections.IEnumerator MostrarSpriteTormenta()
+    {
+        enPowerUp = true;
+        yield return new WaitForSeconds(0.5f);
+        enPowerUp = false;
+    }
+
+    private System.Collections.IEnumerator PowerUpVelocidad(float duracion)
+    {
+        enPowerUp = true;
+        moveSpeed *= 1.4f;
+        yield return new WaitForSeconds(0.5f);
+        enPowerUp = false;
+        yield return new WaitForSeconds(duracion - 0.5f);
+        moveSpeed /= 1.4f;
+    }
+
+    private System.Collections.IEnumerator CongelarCorvus(float duracion)
+    {
+        enPowerUp = true;
+        CorvusController[] cuervos = FindObjectsByType<CorvusController>(FindObjectsSortMode.None);
+        foreach (CorvusController c in cuervos)
+            c.enabled = false;
+
+        yield return new WaitForSeconds(0.5f);
+        enPowerUp = false;
+
+        yield return new WaitForSeconds(duracion - 0.5f);
+        foreach (CorvusController c in cuervos)
+            c.enabled = true;
     }
 }
