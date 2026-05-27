@@ -37,5 +37,5 @@ Controla a Corvus, un cuervo que debe recolectar semillas y sobrevivir en un mun
 
 ## Creditos
 
-Desarrollado por **JuanChosht**  
+Desarrollado por **Juan Choca, Carlos Llumiquinga**  
 Curso: Desarrollo de Videojuegos - Sexto Semestre
